@@ -20,21 +20,21 @@ export class Review {
   @Column({ unique: true })
   request_id: number;
 
-  @OneToOne(() => Request)
+  @OneToOne(() => Request, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'request_id' })
   request: Request;
 
   @Column()
   worker_id: number;
 
-  @ManyToOne(() => Worker)
+  @ManyToOne(() => Worker, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'worker_id' })
   worker: Worker;
 
   @Column()
   client_id: number;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'client_id' })
   client: User;
 

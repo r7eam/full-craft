@@ -25,7 +25,7 @@ export const portfolioApi = {
    * @returns {Promise<Object>} Created portfolio item with message
    */
   uploadPortfolioWithImage: async (formData) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('access_token'); // Changed from 'token' to 'access_token'
     
     const response = await fetch(`${API_BASE_URL}/worker-portfolio/upload-with-image`, {
       method: 'POST',
@@ -38,6 +38,30 @@ export const portfolioApi = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Failed to upload portfolio item');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Upload multiple portfolio images at once
+   * @param {FormData} formData - Form data containing multiple image files
+   * @returns {Promise<Object>} Created portfolio items with message
+   */
+  uploadMultiplePortfolioImages: async (formData) => {
+    const token = localStorage.getItem('access_token');
+    
+    const response = await fetch(`${API_BASE_URL}/worker-portfolio/upload-multiple-images`, {
+      method: 'POST',
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to upload portfolio items');
     }
 
     return response.json();

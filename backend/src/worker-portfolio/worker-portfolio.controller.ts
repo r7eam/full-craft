@@ -9,10 +9,11 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  UploadedFiles,
   BadRequestException,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { WorkerPortfolioService } from './worker-portfolio.service';
@@ -105,16 +106,16 @@ export class WorkerPortfolioController {
 
   @ApiBearerAuth('JWT-auth')
   @Public()
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.workerPortfolioService.findOne(+id);
+  @Get('worker/:workerId')
+  findByWorkerId(@Param('workerId') workerId: string) {
+    return this.workerPortfolioService.findByWorkerId(+workerId);
   }
 
   @ApiBearerAuth('JWT-auth')
   @Public()
-  @Get('worker/:workerId')
-  findByWorkerId(@Param('workerId') workerId: string) {
-    return this.workerPortfolioService.findByWorkerId(+workerId);
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.workerPortfolioService.findOne(+id);
   }
 
   @ApiOperation({ summary: 'Update portfolio item' })
@@ -190,8 +191,8 @@ export class WorkerPortfolioController {
   @Post('upload-with-image')
   @UseInterceptors(FileInterceptor('image', portfolioImageStorage))
   async createWithImage(
-    @Body() dto: Omit<CreateWorkerPortfolioDto, 'image_url'>,
     @UploadedFile() file: MulterFile,
+    @Body() body: any,
     @CurrentUser() user: any,
   ) {
     if (!file) {
@@ -201,9 +202,9 @@ export class WorkerPortfolioController {
     const imageUrl = `/uploads/portfolio/${file.filename}`;
     
     const portfolioDto: CreateWorkerPortfolioDto = {
-      ...dto,
-      worker_id: dto.worker_id ? Number(dto.worker_id) : undefined,
       image_url: imageUrl,
+      description: body.description || null,
+      worker_id: body.worker_id ? Number(body.worker_id) : undefined,
     };
 
     const portfolio = await this.workerPortfolioService.create(portfolioDto, user);
@@ -211,6 +212,43 @@ export class WorkerPortfolioController {
     return {
       ...portfolio,
       message: 'Portfolio item created with image successfully',
+    };
+  }
+
+  @ApiOperation({ summary: 'Upload multiple portfolio images at once' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBearerAuth('JWT-auth')
+  @Roles('worker', 'admin')
+  @Post('upload-multiple-images')
+  @UseInterceptors(FilesInterceptor('images', 10, portfolioImageStorage))
+  async createWithMultipleImages(
+    @UploadedFiles() files: MulterFile[],
+    @Body() body: any,
+    @CurrentUser() user: any,
+  ) {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No image files uploaded');
+    }
+
+    const portfolioItems: any[] = [];
+
+    for (const file of files) {
+      const imageUrl = `/uploads/portfolio/${file.filename}`;
+      
+      const portfolioDto: CreateWorkerPortfolioDto = {
+        image_url: imageUrl,
+        description: body.description || null,
+        worker_id: body.worker_id ? Number(body.worker_id) : undefined,
+      };
+
+      const portfolio = await this.workerPortfolioService.create(portfolioDto, user);
+      portfolioItems.push(portfolio);
+    }
+
+    return {
+      portfolioItems,
+      count: portfolioItems.length,
+      message: `${portfolioItems.length} portfolio items created successfully`,
     };
   }
 }

@@ -20,14 +20,14 @@ export class Favorite {
   @Column()
   client_id: number;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'client_id' })
   client: User;
 
   @Column()
   worker_id: number;
 
-  @ManyToOne(() => Worker)
+  @ManyToOne(() => Worker, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'worker_id' })
   worker: Worker;
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import portfolioApi from '../config/portfolioApi';
+import { portfolioApi } from '../config/portfolioApi';
 
 /**
  * Hook to fetch all portfolio items
@@ -230,4 +230,97 @@ export const useDeletePortfolio = () => {
   };
 
   return { deletePortfolio, isDeleting, isError, error };
+};
+
+/**
+ * Combined hook for portfolio operations with unified state management
+ * @returns {Object} Portfolio operations with loading, error, and success states
+ */
+export const usePortfolioOperations = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+
+  const clearMessages = () => {
+    setError(null);
+    setSuccess(null);
+  };
+
+  const uploadPortfolioImage = async (imageFile, description = '') => {
+    try {
+      setLoading(true);
+      clearMessages();
+
+      const formData = new FormData();
+      formData.append('image', imageFile);
+      if (description) {
+        formData.append('description', description);
+      }
+
+      const response = await portfolioApi.uploadPortfolioWithImage(formData);
+      setSuccess('تم رفع الصورة بنجاح');
+      return response;
+    } catch (err) {
+      const errorMessage = err.message || 'فشل في رفع الصورة';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const uploadMultiplePortfolioImages = async (imageFiles, description = '') => {
+    try {
+      setLoading(true);
+      clearMessages();
+
+      const formData = new FormData();
+      
+      // Append all image files
+      for (let i = 0; i < imageFiles.length; i++) {
+        formData.append('images', imageFiles[i]);
+      }
+      
+      if (description) {
+        formData.append('description', description);
+      }
+
+      const response = await portfolioApi.uploadMultiplePortfolioImages(formData);
+      setSuccess(`تم رفع ${imageFiles.length} صورة بنجاح`);
+      return response;
+    } catch (err) {
+      const errorMessage = err.message || 'فشل في رفع الصور';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deletePortfolioItem = async (id) => {
+    try {
+      setLoading(true);
+      clearMessages();
+
+      const response = await portfolioApi.deletePortfolioItem(id);
+      setSuccess('تم حذف الصورة بنجاح');
+      return response;
+    } catch (err) {
+      const errorMessage = err.message || 'فشل في حذف الصورة';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    uploadPortfolioImage,
+    uploadMultiplePortfolioImages,
+    deletePortfolioItem,
+    loading,
+    error,
+    success,
+    clearMessages,
+  };
 };

@@ -46,7 +46,16 @@ export class UsersService {
   }
 
   async remove(id: number) {
-    const user = await this.findOne(id);
-    return this.usersRepository.remove(user);
+    const user = await this.usersRepository.findOne({ 
+      where: { id },
+      relations: ['neighborhood']
+    });
+    
+    if (!user) {
+      throw new NotFoundException(`User ${id} not found`);
+    }
+    
+    await this.usersRepository.delete(id);
+    return { message: 'User deleted successfully', id };
   }
 }

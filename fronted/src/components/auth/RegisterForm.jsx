@@ -34,20 +34,21 @@ const RegisterForm = () => {
   const [userType, setUserType] = useState("client");
   const [showServiceMessage, setShowServiceMessage] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  
-  // Fetch professions and neighborhoods from API
-  const { data: professions, isLoading: professionsLoading } = useActiveProfessions();
-  const { data: neighborhoods, isLoading: neighborhoodsLoading } = useNeighborhoods();
 
+  // Fetch professions and neighborhoods from API
+  const { data: professions = [], isLoading: professionsLoading } =
+    useActiveProfessions();
+  const { data: neighborhoods = [], isLoading: neighborhoodsLoading } =
+    useNeighborhoods();
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const type = params.get("type");
     const redirect = params.get("redirect");
-    
+
     if (type === "worker") {
       setUserType("worker");
     }
-    
+
     if (redirect === "service") {
       setShowServiceMessage(true);
     }
@@ -127,9 +128,12 @@ const RegisterForm = () => {
           ...formData,
           role: userType,
         };
-        
+
+        // تسجيل البيانات قبل الإرسال للخادم
+        console.log("📤 البيانات المرسلة للخادم:", userData);
+
         const result = await register(userData);
-        
+
         if (result.success) {
           navigate("/profile");
         } else {
@@ -162,6 +166,10 @@ const RegisterForm = () => {
 
   const handleWorkerChange = (event) => {
     const { name, value } = event.target;
+    if (name === "profession") {
+      const selectedProfession = professions.find((p) => p.id === value);
+      console.log("🧰 التخصص المختار:", selectedProfession?.name);
+    }
     setWorkerForm((prev) => ({
       ...prev,
       [name]: value,
@@ -283,7 +291,7 @@ const RegisterForm = () => {
             </Typography>
           </Box>
         )}
-        
+
         <Typography
           variant="h4"
           align="center"
@@ -449,7 +457,11 @@ const RegisterForm = () => {
                       onMouseDown={(e) => e.preventDefault()}
                       edge="end"
                     >
-                      {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                      {showPassword ? (
+                        <VisibilityOffIcon />
+                      ) : (
+                        <VisibilityIcon />
+                      )}
                     </IconButton>
                   </InputAdornment>
                 ),
@@ -491,12 +503,14 @@ const RegisterForm = () => {
                         <CircularProgress size={20} /> جاري التحميل...
                       </MenuItem>
                     ) : professions.length === 0 ? (
-                      <MenuItem disabled>
-                        لا توجد حرف متاحة
-                      </MenuItem>
+                      <MenuItem disabled>لا توجد حرف متاحة</MenuItem>
                     ) : (
                       professions.map((profession) => (
-                        <MenuItem key={profession.id} value={profession.id} dir="rtl">
+                        <MenuItem
+                          key={profession.id}
+                          value={profession.id}
+                          dir="rtl"
+                        >
                           {profession.name}
                         </MenuItem>
                       ))
@@ -537,37 +551,52 @@ const RegisterForm = () => {
                         <CircularProgress size={20} /> جاري التحميل...
                       </MenuItem>
                     ) : neighborhoods.length === 0 ? (
-                      <MenuItem disabled>
-                        لا توجد مناطق متاحة
-                      </MenuItem>
+                      <MenuItem disabled>لا توجد مناطق متاحة</MenuItem>
                     ) : (
-                      <>
-                        {/* Right Side Neighborhoods */}
-                        <MenuItem disabled sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                      [
+                        <MenuItem
+                          key="label-right"
+                          disabled
+                          sx={{ fontWeight: "bold", color: "primary.main" }}
+                        >
                           الساحل الأيمن
-                        </MenuItem>
-                        {neighborhoods
-                          .filter(n => n.area === 'الساحل الأيمن')
+                        </MenuItem>,
+                        ...neighborhoods
+                          .filter((n) => n.area === "الساحل الأيمن")
                           .map((neighborhood) => (
-                            <MenuItem key={neighborhood.id} value={neighborhood.id} dir="rtl" sx={{ pl: 4 }}>
+                            <MenuItem
+                              key={neighborhood.id}
+                              value={neighborhood.id}
+                              dir="rtl"
+                              sx={{ pl: 4 }}
+                            >
                               {neighborhood.name}
                             </MenuItem>
-                          ))
-                        }
-                        
-                        {/* Left Side Neighborhoods */}
-                        <MenuItem disabled sx={{ fontWeight: 'bold', color: 'primary.main', mt: 1 }}>
+                          )),
+                        <MenuItem
+                          key="label-left"
+                          disabled
+                          sx={{
+                            fontWeight: "bold",
+                            color: "primary.main",
+                            mt: 1,
+                          }}
+                        >
                           الساحل الأيسر
-                        </MenuItem>
-                        {neighborhoods
-                          .filter(n => n.area === 'الساحل الأيسر')
+                        </MenuItem>,
+                        ...neighborhoods
+                          .filter((n) => n.area === "الساحل الأيسر")
                           .map((neighborhood) => (
-                            <MenuItem key={neighborhood.id} value={neighborhood.id} dir="rtl" sx={{ pl: 4 }}>
+                            <MenuItem
+                              key={neighborhood.id}
+                              value={neighborhood.id}
+                              dir="rtl"
+                              sx={{ pl: 4 }}
+                            >
                               {neighborhood.name}
                             </MenuItem>
-                          ))
-                        }
-                      </>
+                          )),
+                      ]
                     )}
                   </Select>
                   {errors.city && (

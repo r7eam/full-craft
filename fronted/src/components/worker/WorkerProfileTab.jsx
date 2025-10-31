@@ -19,14 +19,21 @@ import {
   FormControlLabel,
   Divider,
   LinearProgress,
+  IconButton,
+  ImageList,
+  ImageListItem,
+  ImageListItemBar,
 } from '@mui/material';
 import {
   Save as SaveIcon,
   Upload as UploadIcon,
   CheckCircle as CheckCircleIcon,
+  Delete as DeleteIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { useWorkerByUserId, useWorkerOperations } from '../../hooks/useWorkers';
+import { useWorkerPortfolio, usePortfolioOperations } from '../../hooks/usePortfolio';
 
 const professions = [
   { id: 1, name: 'كهربائي' },
@@ -59,6 +66,17 @@ function WorkerProfileTab() {
     clearMessages,
   } = useWorkerOperations();
 
+  // Portfolio hooks
+  const { data: portfolioItems, refetch: refetchPortfolio } = useWorkerPortfolio(worker?.id);
+  const {
+    uploadPortfolioImage,
+    uploadMultiplePortfolioImages,
+    deletePortfolioItem,
+    loading: portfolioLoading,
+    error: portfolioError,
+    success: portfolioSuccess,
+  } = usePortfolioOperations();
+
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     profession_id: '',
@@ -72,6 +90,10 @@ function WorkerProfileTab() {
   });
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  
+  // Portfolio states
+  const [portfolioImages, setPortfolioImages] = useState([]);
+  const [portfolioDescription, setPortfolioDescription] = useState('');
 
   // Initialize form when worker data loads
   useEffect(() => {
@@ -173,6 +195,58 @@ function WorkerProfileTab() {
       await refetch();
     } catch (err) {
       console.error('Error toggling availability:', err);
+    }
+  };
+
+  const handlePortfolioImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      // Check file sizes
+      const oversized = files.filter(file => file.size > 5 * 1024 * 1024);
+      if (oversized.length > 0) {
+        alert('بعض الصور أكبر من 5 ميجابايت. الرجاء اختيار صور أصغر.');
+        return;
+      }
+      setPortfolioImages(files);
+    }
+  };
+
+  const handleUploadPortfolioImage = async () => {
+    if (!portfolioImages || portfolioImages.length === 0) {
+      alert('الرجاء اختيار صورة أو أكثر');
+      return;
+    }
+
+    try {
+      if (portfolioImages.length === 1) {
+        // Single image upload
+        await uploadPortfolioImage(portfolioImages[0], portfolioDescription);
+      } else {
+        // Multiple images upload
+        await uploadMultiplePortfolioImages(portfolioImages, portfolioDescription);
+      }
+      
+      setPortfolioImages([]);
+      setPortfolioDescription('');
+      // Reset file input
+      const fileInput = document.getElementById('portfolio-image-upload');
+      if (fileInput) fileInput.value = '';
+      await refetchPortfolio();
+    } catch (err) {
+      console.error('Error uploading portfolio image:', err);
+    }
+  };
+
+  const handleDeletePortfolioItem = async (itemId) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذه الصورة؟')) {
+      return;
+    }
+
+    try {
+      await deletePortfolioItem(itemId);
+      await refetchPortfolio();
+    } catch (err) {
+      console.error('Error deleting portfolio item:', err);
     }
   };
 
@@ -473,6 +547,141 @@ function WorkerProfileTab() {
               </form>
             </CardContent>
           </Card>
+
+          {/* Portfolio Section */}
+          {worker && (
+            <Card sx={{ mt: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom fontWeight="bold" mb={3}>
+                  معرض الأعمال (Portfolio)
+                </Typography>
+
+                {/* Success/Error Messages for Portfolio */}
+                {portfolioSuccess && (
+                  <Alert severity="success" sx={{ mb: 2 }}>
+                    {portfolioSuccess}
+                  </Alert>
+                )}
+                {portfolioError && (
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    {portfolioError}
+                  </Alert>
+                )}
+
+                {/* Upload New Portfolio Image */}
+                <Card variant="outlined" sx={{ p: 2, mb: 3, bgcolor: '#f5f5f5' }}>
+                  <Typography variant="subtitle1" gutterBottom fontWeight="bold">
+                    إضافة صور جديدة للمعرض
+                  </Typography>
+                  
+                  <Grid container spacing={2} alignItems="center">
+                    <Grid item xs={12} sm={6}>
+                      <input
+                        accept="image/*"
+                        type="file"
+                        id="portfolio-image-upload"
+                        multiple
+                        style={{ display: 'none' }}
+                        onChange={handlePortfolioImageChange}
+                      />
+                      <label htmlFor="portfolio-image-upload">
+                        <Button
+                          variant="outlined"
+                          component="span"
+                          fullWidth
+                          startIcon={<AddIcon />}
+                        >
+                          {portfolioImages.length > 0 
+                            ? `تم اختيار ${portfolioImages.length} صورة` 
+                            : 'اختر صور (متعددة)'}
+                        </Button>
+                      </label>
+                      {portfolioImages.length > 0 && (
+                        <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                          {portfolioImages.map(f => f.name).join(', ')}
+                        </Typography>
+                      )}
+                    </Grid>
+                    
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        label="وصف العمل (اختياري)"
+                        value={portfolioDescription}
+                        onChange={(e) => setPortfolioDescription(e.target.value)}
+                        placeholder="مثال: تركيب كهرباء منزل..."
+                      />
+                    </Grid>
+                    
+                    <Grid item xs={12}>
+                      <Button
+                        variant="contained"
+                        fullWidth
+                        onClick={handleUploadPortfolioImage}
+                        disabled={portfolioImages.length === 0 || portfolioLoading}
+                        startIcon={portfolioLoading ? <CircularProgress size={20} /> : <UploadIcon />}
+                      >
+                        {portfolioLoading 
+                          ? 'جاري الرفع...' 
+                          : `رفع ${portfolioImages.length > 0 ? portfolioImages.length : ''} صورة`}
+                      </Button>
+                    </Grid>
+                  </Grid>
+                </Card>
+
+                {/* Portfolio Gallery */}
+                <Typography variant="subtitle1" gutterBottom fontWeight="bold">
+                  الأعمال المنشورة ({portfolioItems?.length || 0})
+                </Typography>
+
+                {portfolioItems && portfolioItems.length > 0 ? (
+                  <ImageList sx={{ width: '100%', height: 450 }} cols={3} rowHeight={200}>
+                    {portfolioItems.map((item) => (
+                      <ImageListItem key={item.id}>
+                        <img
+                          src={`http://localhost:3000${item.image_url}`}
+                          alt={item.description || 'Portfolio item'}
+                          loading="lazy"
+                          style={{ height: '200px', objectFit: 'cover' }}
+                        />
+                        <ImageListItemBar
+                          title={item.description || 'بدون وصف'}
+                          subtitle={new Date(item.created_at).toLocaleDateString('ar-IQ')}
+                          actionIcon={
+                            <IconButton
+                              sx={{ color: 'rgba(255, 255, 255, 0.9)' }}
+                              onClick={() => handleDeletePortfolioItem(item.id)}
+                              disabled={portfolioLoading}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          }
+                        />
+                      </ImageListItem>
+                    ))}
+                  </ImageList>
+                ) : (
+                  <Box
+                    sx={{
+                      textAlign: 'center',
+                      py: 4,
+                      border: '2px dashed #ccc',
+                      borderRadius: 2,
+                      bgcolor: '#fafafa',
+                    }}
+                  >
+                    <Typography variant="body2" color="text.secondary">
+                      لم تقم بإضافة أي صور لمعرض أعمالك بعد
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                      أضف صور لأعمالك السابقة لجذب المزيد من العملاء
+                    </Typography>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </Grid>
       </Grid>
     </Box>

@@ -19,7 +19,7 @@ export class Worker {
   @Column({ unique: true })
   user_id: number;
 
-  @OneToOne(() => User)
+  @OneToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
 
