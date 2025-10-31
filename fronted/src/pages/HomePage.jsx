@@ -9,11 +9,9 @@ import {
   Stack,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { useSearch } from "../context/SearchContext";
 
 function HomePage() {
   const navigate = useNavigate();
-  const { searchText } = useSearch();
 
   const services = [
     {
@@ -90,29 +88,27 @@ function HomePage() {
       }}
     >
       <Container maxWidth="lg" sx={{ my: 12 }}>
-        {!searchText && (
-          <Typography
-            variant="h3"
-            align="center"
-            gutterBottom
-            sx={{
-              fontWeight: 700,
-              color: "primary.main",
-              position: "relative",
-              "&::after": {
-                content: '""',
-                display: "block",
-                width: "300px",
-                height: "2px",
-                backgroundColor: "primary.main",
-                margin: "10px auto",
-                borderRadius: "3px",
-              },
-            }}
-          >
-            أطلع على الخدمات
-          </Typography>
-        )}
+        <Typography
+          variant="h3"
+          align="center"
+          gutterBottom
+          sx={{
+            fontWeight: 700,
+            color: "primary.main",
+            position: "relative",
+            "&::after": {
+              content: '""',
+              display: "block",
+              width: "300px",
+              height: "2px",
+              backgroundColor: "primary.main",
+              margin: "10px auto",
+              borderRadius: "3px",
+            },
+          }}
+        >
+          أطلع على الخدمات
+        </Typography>
 
         <Box
           sx={{
@@ -131,15 +127,8 @@ function HomePage() {
             padding: "0 40px",
           }}
         >
-          {services
-            .filter(
-              (service) =>
-                searchText === "" ||
-                service.title.includes(searchText) ||
-                service.description.includes(searchText)
-            )
-            .map((service, index) => (
-              <Grid item key={index}>
+          {services.map((service, index) => (
+            <Grid item key={index}>
                 <Card
                   sx={{
                     height: "100%",
