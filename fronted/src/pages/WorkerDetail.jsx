@@ -18,6 +18,9 @@ import {
   ListItemIcon,
   ListItemText,
   Paper,
+  ImageList,
+  ImageListItem,
+  ImageListItemBar,
 } from '@mui/material';
 import {
   Phone as PhoneIcon,
@@ -35,6 +38,7 @@ import {
   RequestPage as RequestPageIcon,
 } from '@mui/icons-material';
 import { useWorker } from '../hooks/useWorkers';
+import { useWorkerPortfolio } from '../hooks/usePortfolio';
 import FavoriteButton from '../components/favorites/FavoriteButton.jsx';
 import WorkerReviewsList from '../components/reviews/WorkerReviewsList.jsx';
 
@@ -42,6 +46,7 @@ function WorkerDetail() {
   const { workerId } = useParams();
   const navigate = useNavigate();
   const { worker, loading, error } = useWorker(workerId);
+  const { data: portfolioItems, isLoading: portfolioLoading } = useWorkerPortfolio(workerId);
 
   const handleWhatsAppClick = () => {
     if (worker?.whatsapp_number) {
@@ -356,15 +361,49 @@ function WorkerDetail() {
             </CardContent>
           </Card>
 
-          {/* Portfolio Section (Placeholder) */}
+          {/* Portfolio Section */}
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
-                معرض الأعمال
+                معرض الأعمال ({portfolioItems?.length || 0})
               </Typography>
-              <Alert severity="info">
-                سيتم عرض معرض الأعمال قريباً
-              </Alert>
+              
+              {portfolioLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                  <CircularProgress />
+                </Box>
+              ) : portfolioItems && portfolioItems.length > 0 ? (
+                <ImageList cols={2} gap={8} sx={{ maxHeight: 500, overflow: 'auto' }}>
+                  {portfolioItems.map((item) => (
+                    <ImageListItem key={item.id}>
+                      <img
+                        src={`http://localhost:3000${item.image_url}`}
+                        alt={item.description || 'Portfolio item'}
+                        loading="lazy"
+                        style={{ 
+                          height: '200px', 
+                          objectFit: 'cover',
+                          borderRadius: '8px',
+                        }}
+                      />
+                      {item.description && (
+                        <ImageListItemBar
+                          title={item.description}
+                          subtitle={new Date(item.created_at).toLocaleDateString('ar-IQ')}
+                          sx={{
+                            borderBottomLeftRadius: '8px',
+                            borderBottomRightRadius: '8px',
+                          }}
+                        />
+                      )}
+                    </ImageListItem>
+                  ))}
+                </ImageList>
+              ) : (
+                <Alert severity="info">
+                  لا توجد أعمال منشورة في معرض هذا العامل بعد
+                </Alert>
+              )}
             </CardContent>
           </Card>
         </Grid>
