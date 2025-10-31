@@ -27,6 +27,14 @@ export const apiRequest = async (endpoint, options = {}) => {
     },
   };
 
+  // Debug logging
+  console.log('API Request:', {
+    url,
+    method: config.method || 'GET',
+    hasToken: !!getAuthToken(),
+    headers: config.headers,
+  });
+
   try {
     const response = await fetch(url, config);
     const data = await response.json();
@@ -43,6 +51,12 @@ export const apiRequest = async (endpoint, options = {}) => {
           errorMessage = data.message;
         }
       }
+
+      console.error('API Error:', {
+        status: response.status,
+        message: errorMessage,
+        data,
+      });
 
       throw {
         status: response.status,

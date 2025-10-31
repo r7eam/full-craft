@@ -99,6 +99,15 @@ export class RequestsService {
   }
 
   private async validateStatusUpdatePermissions(request: Request, newStatus: string, user: any) {
+    console.log('Validating status update:', {
+      requestId: request.id,
+      newStatus,
+      userId: user.id,
+      userRole: user.role,
+      requestWorkerId: request.worker_id,
+      requestClientId: request.client_id,
+    });
+
     // Client permissions
     if (user.role === 'client') {
       // Client can only modify their own requests
@@ -116,6 +125,11 @@ export class RequestsService {
       // Find worker record for the authenticated user
       const worker = await this.workersRepository.findOne({
         where: { user_id: user.id }
+      });
+      
+      console.log('Worker lookup result:', {
+        userId: user.id,
+        worker: worker ? { id: worker.id, user_id: worker.user_id } : null,
       });
       
       if (!worker) {

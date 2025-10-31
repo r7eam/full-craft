@@ -31,6 +31,16 @@ const CreateRequestPage = () => {
     e.preventDefault();
     setFormError('');
 
+    // Check if user is authenticated
+    const token = localStorage.getItem('access_token');
+    console.log('Token exists:', !!token);
+    console.log('User:', user);
+    
+    if (!token || !user) {
+      setFormError('يجب تسجيل الدخول لإنشاء طلب');
+      return;
+    }
+
     if (!problemDescription.trim()) {
       setFormError('يرجى إدخال وصف المشكلة');
       return;
